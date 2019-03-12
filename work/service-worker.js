@@ -1,5 +1,5 @@
 // O escopo dos service workers é definido pelo diretório onde o arquivo se encontra
-var cacheName = 'tutorial-PWA';
+var cacheName = 'tutorial-PWA'; // É sempre importante mudar esse valor para o serviceWorker atualizar o cache
 // Definindo arquivos que serão cacheados
 var filesToCache = [
   '/',
@@ -36,30 +36,38 @@ self.addEventListener('install', function(e){
   )
 })
 
-/* Este código garante que o service worker atualize seu cache sempre 
+/* Esse evento é ativado quando uma nova versão do service worker
+é instalada. Este código garante que o service worker atualize seu cache sempre 
 que qualquer um dos arquivos do shell do aplicativo mudar. */
 self.addEventListener('activate', function(e) {
   console.log('[ServiceWorker] Activate');
   e.waitUntil(
-    caches.keys().then(function(keyList){
-      return Promise.all(keyList.map(function(key){
-        if(key !== cacheName){
-          console.log('[ServiceWorker] Removing old cache', key);
-          return caches.delete(key);
-        }
-      }))
-    })
+    // Promisse que retorna uma lista de cache names armazenados
+    caches.keys()
+      .then(function(cacheNames){
+        return Promise.all(
+          cacheNames.map(function(cacheItem){
+            if(cacheItem !== cacheName){
+              console.log('[ServiceWorker] Removing old cache', cacheItem);
+              return caches.delete(cacheItem);
+            }
+          })
+        )
+      })
   )
   return self.clients.claim();
 });
 
+/* Esse evento é ativado toda vez que uma página é requisitada.*/
 self.addEventListener("fetch", function(e){
   console.log('[ServiceWorker] Fetch', e.request.url);
   e.respondWith(
-    // O caches.match() avalia a solicitação da Web que acionou o evento de busca e verifica se ele está disponível no cache
-    caches.match(e.request).then(function(response){
-      return response || fetch(e.request);
-    })
+    /* O caches.match() avalia a solicitação da Web que acionou o evento 
+    de busca e verifica se ele está disponível no cache*/
+    caches.match(e.request)
+      .then(function(response){
+        return response || fetch(e.request);
+      })
   )
 })
 
